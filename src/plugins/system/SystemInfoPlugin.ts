@@ -1,26 +1,36 @@
+// src/plugins/system/SystemInfoPlugin.ts
 import { ICommand, CommandResult } from "@/core/interfaces/ICommand";
 import { BasePlugin } from "../base/BasePlugin";
-import os from "os";
 
-class UptimeCommand implements ICommand {
+// Browser-compatible uptime command
+class BrowserUptimeCommand implements ICommand {
   readonly id = "uptime";
-  readonly description = "Show how long the system has been running";
+  readonly description = "Show how long the browser has been running";
+  private startTime: number;
+
+  constructor() {
+    // Record page load time for simulating uptime
+    this.startTime = Date.now();
+  }
 
   validate(args: string[]): boolean {
     return args.length === 0; // No arguments allowed
   }
 
   async execute(_args: string[]): Promise<CommandResult> {
-    const uptime = os.uptime();
+    const uptime = (Date.now() - this.startTime) / 1000; // in seconds
     const uptimeHours = Math.floor(uptime / 3600);
     const uptimeMinutes = Math.floor((uptime % 3600) / 60);
     const uptimeSeconds = Math.floor(uptime % 60);
 
     const formattedUptime = `${uptimeHours}h ${uptimeMinutes}m ${uptimeSeconds}s`;
-    const loadAvg = os
-      .loadavg()
-      .map((load) => load.toFixed(2))
-      .join(", ");
+
+    // Simulate load average values
+    const loadAvg = [
+      (Math.random() * 2).toFixed(2),
+      (Math.random() * 1.5).toFixed(2),
+      (Math.random() * 1).toFixed(2),
+    ].join(", ");
 
     return {
       output: `Uptime: ${formattedUptime}\nLoad average: ${loadAvg}`,
@@ -29,26 +39,34 @@ class UptimeCommand implements ICommand {
   }
 }
 
-class SysInfoCommand implements ICommand {
+// Browser-compatible system info command
+class BrowserSysInfoCommand implements ICommand {
   readonly id = "sysinfo";
-  readonly description = "Display system information";
+  readonly description = "Display browser system information";
 
   validate(args: string[]): boolean {
     return args.length === 0; // No arguments allowed
   }
 
   async execute(_args: string[]): Promise<CommandResult> {
-    const cpuInfo = os.cpus()[0];
-    const totalMem =
-      Math.round((os.totalmem() / (1024 * 1024 * 1024)) * 10) / 10;
-    const freeMem = Math.round((os.freemem() / (1024 * 1024 * 1024)) * 10) / 10;
+    // Get browser info
+    const userAgent = navigator.userAgent;
+    const platform = navigator.platform;
+    const languages = navigator.languages?.join(", ") || navigator.language;
+    const memory = (navigator as any).deviceMemory
+      ? `${(navigator as any).deviceMemory}GB`
+      : "Unknown";
+    const cores = navigator.hardwareConcurrency || "Unknown";
 
+    // Generate simulated system info using browser data
     const info = [
-      `OS: ${os.type()} ${os.release()} ${os.arch()}`,
-      `Hostname: ${os.hostname()}`,
-      `CPU: ${cpuInfo.model} (${os.cpus().length} cores)`,
-      `Memory: ${freeMem}GB free of ${totalMem}GB total`,
-      `Uptime: ${Math.floor(os.uptime() / 3600)}h ${Math.floor((os.uptime() % 3600) / 60)}m`,
+      `Browser: ${this.getBrowserInfo(userAgent)}`,
+      `Platform: ${platform}`,
+      `Languages: ${languages}`,
+      `Memory: ${memory}`,
+      `CPU Cores: ${cores}`,
+      `Screen Resolution: ${window.screen.width}x${window.screen.height}`,
+      `Window Size: ${window.innerWidth}x${window.innerHeight}`,
     ].join("\n");
 
     return {
@@ -56,13 +74,30 @@ class SysInfoCommand implements ICommand {
       exitCode: 0,
     };
   }
+
+  // Helper to parse browser info from user agent
+  private getBrowserInfo(userAgent: string): string {
+    if (userAgent.includes("Firefox")) {
+      return "Mozilla Firefox";
+    } else if (userAgent.includes("Chrome") && !userAgent.includes("Edg")) {
+      return "Google Chrome";
+    } else if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) {
+      return "Safari";
+    } else if (userAgent.includes("Edg")) {
+      return "Microsoft Edge";
+    } else if (userAgent.includes("Opera") || userAgent.includes("OPR")) {
+      return "Opera";
+    } else {
+      return "Unknown Browser";
+    }
+  }
 }
 
 export class SystemInfoPlugin extends BasePlugin {
   readonly id = "system-info";
   readonly version = "1.0.0";
   readonly commands: ReadonlyArray<ICommand> = [
-    new UptimeCommand(),
-    new SysInfoCommand(),
+    new BrowserUptimeCommand(),
+    new BrowserSysInfoCommand(),
   ];
 }

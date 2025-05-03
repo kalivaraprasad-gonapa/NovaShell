@@ -1,14 +1,12 @@
-// plugins/network/NetworkToolsPlugin.ts
+// src/plugins/network/NetworkToolsPlugin.ts
 import { ICommand, CommandResult } from "@/core/interfaces/ICommand";
 import { BasePlugin } from "../base/BasePlugin";
-import { exec } from "child_process";
-import { promisify } from "util";
 
-const execPromise = promisify(exec);
-
-class PingCommand implements ICommand {
+// Browser-compatible ping command
+class BrowserPingCommand implements ICommand {
   readonly id = "ping";
-  readonly description = "Send ICMP ECHO_REQUEST to network hosts";
+  readonly description =
+    "Simulate pinging network hosts in browser environment";
 
   validate(args: string[]): boolean {
     return args.length === 1; // Exactly one host is required
@@ -17,30 +15,38 @@ class PingCommand implements ICommand {
   async execute(args: string[]): Promise<CommandResult> {
     const host = args[0];
 
-    try {
-      // Run ping command with 4 packets
-      const { stdout, stderr } = await execPromise(`ping -c 4 ${host}`);
-
-      if (stderr) {
-        return {
-          output: stderr,
-          exitCode: 1,
-        };
-      }
-
+    if (!host) {
       return {
-        output: stdout,
-        exitCode: 0,
-      };
-    } catch (error) {
-      return {
-        output: `ping: ${error instanceof Error ? error.message : String(error)}`,
+        output: "Usage: ping <hostname>",
         exitCode: 1,
       };
     }
+
+    // Generate simulated ping response
+    const pingTime = Math.floor(Math.random() * 100) + 5; // 5-105ms
+    const output =
+      `PING ${host} (${this.generateRandomIp()}) 56(84) bytes of data.\n` +
+      `64 bytes from ${host} (${this.generateRandomIp()}): icmp_seq=1 ttl=54 time=${pingTime}.${Math.floor(Math.random() * 1000)} ms\n` +
+      `64 bytes from ${host} (${this.generateRandomIp()}): icmp_seq=2 ttl=54 time=${pingTime + Math.floor(Math.random() * 10) - 5}.${Math.floor(Math.random() * 1000)} ms\n` +
+      `64 bytes from ${host} (${this.generateRandomIp()}): icmp_seq=3 ttl=54 time=${pingTime + Math.floor(Math.random() * 10) - 5}.${Math.floor(Math.random() * 1000)} ms\n` +
+      `64 bytes from ${host} (${this.generateRandomIp()}): icmp_seq=4 ttl=54 time=${pingTime + Math.floor(Math.random() * 10) - 5}.${Math.floor(Math.random() * 1000)} ms\n\n` +
+      `--- ${host} ping statistics ---\n` +
+      `4 packets transmitted, 4 received, 0% packet loss, time ${Math.floor(Math.random() * 10) + 3}ms\n` +
+      `rtt min/avg/max/mdev = ${pingTime - 5}.${Math.floor(Math.random() * 100)}/${pingTime}.${Math.floor(Math.random() * 100)}/${pingTime + 5}.${Math.floor(Math.random() * 100)}/${Math.floor(Math.random() * 5) + 1}.${Math.floor(Math.random() * 100)} ms`;
+
+    return {
+      output,
+      exitCode: 0,
+    };
+  }
+
+  // Helper to generate random IP for simulation
+  private generateRandomIp(): string {
+    return `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
   }
 }
 
+// Real fetch command using browser's fetch API
 class FetchCommand implements ICommand {
   readonly id = "fetch";
   readonly description = "Fetch content from URLs";
@@ -81,7 +87,7 @@ export class NetworkToolsPlugin extends BasePlugin {
   readonly id = "network-tools";
   readonly version = "1.0.0";
   readonly commands: ReadonlyArray<ICommand> = [
-    new PingCommand(),
+    new BrowserPingCommand(),
     new FetchCommand(),
   ];
 }
