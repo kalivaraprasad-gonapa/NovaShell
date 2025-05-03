@@ -96,8 +96,8 @@ class BrowserFileSystem {
 
       return {
         name,
-        isDirectory: () => childEntry?.isDirectory || false,
-        isFile: () => !childEntry?.isDirectory,
+        isDirectory: () => Boolean(childEntry && childEntry.isDirectory),
+        isFile: () => Boolean(childEntry && !childEntry.isDirectory),
       };
     });
   }

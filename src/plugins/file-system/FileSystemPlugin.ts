@@ -1,8 +1,4 @@
-import {
-  ICommand,
-  CommandResult,
-  IShellSession,
-} from "@/core/interfaces/ICommand";
+import { ICommand } from "@/core/interfaces/ICommand";
 import { BasePlugin } from "../base/BasePlugin";
 import { IWorkingDirectoryManager } from "@/core/interfaces/IWorkingDirectory";
 import { WorkingDirectoryManager } from "@/core/shell/WorkingDirectoryManager";

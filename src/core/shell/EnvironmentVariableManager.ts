@@ -4,13 +4,17 @@ export class EnvironmentVariableManager implements IEnvironmentVariableManager {
   private variables: Record<string, string> = {};
 
   constructor(initialVariables?: Record<string, string>) {
+    const isNode = typeof process !== "undefined" && process.env;
     // Initialize with system environment variables
     this.variables = {
-      // Include some basic environment variables
-      PATH: process.env.PATH || "",
-      HOME: process.env.HOME || process.env.USERPROFILE || "",
-      USER: process.env.USER || process.env.USERNAME || "",
-      SHELL: process.env.SHELL || "",
+      PATH: isNode ? (process.env.PATH ?? "") : "",
+      HOME: isNode
+        ? (process.env.HOME ?? process.env.USERPROFILE ?? "")
+        : "/home/user",
+      USER: isNode
+        ? (process.env.USER ?? process.env.USERNAME ?? "")
+        : "browser",
+      SHELL: isNode ? (process.env.SHELL ?? "") : "nsh",
       // Add any additional provided variables
       ...initialVariables,
     };
