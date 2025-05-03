@@ -5,16 +5,12 @@ import {
   CommandResult,
   IShellSession,
 } from "@/core/interfaces/ICommand";
-import { exec } from "child_process";
-import { promisify } from "util";
 
-const execPromise = promisify(exec);
-
-// This command will handle any command not found in the registry
-// by passing it to the system shell
-class SystemShellCommand implements ICommand {
+// Mock system shell command for browser environment
+class BrowserSystemShellCommand implements ICommand {
   readonly id = "system-command";
-  readonly description = "Executes a command in the system shell";
+  readonly description =
+    "Simulates executing a command in the system shell (browser environment)";
   private shellSession?: IShellSession;
 
   constructor(shellSession?: IShellSession) {
@@ -26,55 +22,36 @@ class SystemShellCommand implements ICommand {
   }
 
   validate(_args: string[]): boolean {
-    // All system commands are considered valid since we don't know in advance
+    // All system commands are considered valid
     return true;
   }
 
   async execute(args: string[]): Promise<CommandResult> {
-    try {
-      // Get the full command line including arguments
-      const commandLine = args.join(" ");
+    // Get the full command line including arguments
+    const commandLine = args.join(" ");
 
-      // Detect the system shell based on the platform
-      const shell =
-        process.platform === "win32" ? "powershell.exe" : "/bin/bash";
-      const shellFlag = process.platform === "win32" ? "-Command" : "-c";
-
-      // Execute the command using the system shell
-      const { stdout, stderr } = await execPromise(
-        `${shell} ${shellFlag} "${commandLine}"`,
-      );
-
-      // Return the result
-      return {
-        output: stdout || stderr,
-        exitCode: stderr ? 1 : 0,
-        metadata: {
-          isSystemCommand: true,
-          shell: process.platform === "win32" ? "PowerShell" : "Bash",
-        },
-      };
-    } catch (error: any) {
-      return {
-        output: `Error executing system command: ${error.message}`,
-        exitCode: 1,
-        metadata: {
-          isSystemCommand: true,
-          error: true,
-        },
-      };
-    }
+    // In a browser, we can't actually execute system commands
+    // But we can provide a simulated response
+    return {
+      output: `Note: In browser environment, system commands cannot be executed directly.\nCommand simulated: ${commandLine}\n\nFor full system shell integration, use NovaShell in a Node.js environment.`,
+      exitCode: 0,
+      metadata: {
+        isSystemCommand: true,
+        shell: "Browser Environment",
+        simulated: true,
+      },
+    };
   }
 }
 
 // The fallback command handles any command not found in the registry
-class FallbackCommand implements ICommand {
+class BrowserFallbackCommand implements ICommand {
   readonly id = "fallback";
   readonly description = "Handles commands not found in the registry";
-  private readonly systemCommand: SystemShellCommand;
+  private readonly systemCommand: BrowserSystemShellCommand;
   private shellSession?: IShellSession;
 
-  constructor(systemCommand: SystemShellCommand) {
+  constructor(systemCommand: BrowserSystemShellCommand) {
     this.systemCommand = systemCommand;
   }
 
@@ -114,19 +91,19 @@ class FallbackCommand implements ICommand {
   }
 }
 
-// The plugin that provides system shell integration
+// Browser-compatible plugin that provides system shell simulation
 export class SystemShellPlugin extends BasePlugin {
   readonly id = "system-shell";
   readonly version = "1.0.0";
 
-  private readonly systemCommand: SystemShellCommand;
-  private readonly fallbackCommand: FallbackCommand;
+  private readonly systemCommand: BrowserSystemShellCommand;
+  private readonly fallbackCommand: BrowserFallbackCommand;
   private _commands: ICommand[];
 
   constructor() {
     super();
-    this.systemCommand = new SystemShellCommand();
-    this.fallbackCommand = new FallbackCommand(this.systemCommand);
+    this.systemCommand = new BrowserSystemShellCommand();
+    this.fallbackCommand = new BrowserFallbackCommand(this.systemCommand);
     this._commands = [this.systemCommand, this.fallbackCommand];
   }
 

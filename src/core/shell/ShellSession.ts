@@ -1,3 +1,4 @@
+// src/core/shell/ShellSession.ts
 import {
   CommandResult,
   ICommand,
@@ -6,32 +7,63 @@ import {
   IHistoryManager,
   IShellSession,
 } from "../interfaces/ICommand";
+import { IEnvironmentVariableManager } from "../interfaces/IEnvironment";
+import { IWorkingDirectoryManager } from "../interfaces/IWorkingDirectory";
+import { ITabCompletionRegistry } from "../interfaces/ITabCompletion";
+import { EnvironmentVariableManager } from "./EnvironmentVariableManager";
+import { WorkingDirectoryManager } from "./WorkingDirectoryManager";
+import { TabCompletionRegistry } from "../completion/TabCompletionRegistry";
 
 export class ShellSession implements IShellSession {
   private readonly commandRegistry: ICommandRegistry;
   private readonly historyManager: IHistoryManager;
   private readonly commandParser: ICommandParser;
+  private readonly environmentManager: IEnvironmentVariableManager;
+  private readonly workingDirManager: IWorkingDirectoryManager;
+  private readonly tabCompletionRegistry: ITabCompletionRegistry;
   private fallbackCommand?: ICommand;
 
   constructor(
     commandRegistry: ICommandRegistry,
     historyManager: IHistoryManager,
     commandParser: ICommandParser,
+    environmentManager: IEnvironmentVariableManager = new EnvironmentVariableManager(),
+    workingDirManager: IWorkingDirectoryManager = new WorkingDirectoryManager(),
+    tabCompletionRegistry: ITabCompletionRegistry = new TabCompletionRegistry(),
   ) {
     this.commandRegistry = commandRegistry;
     this.historyManager = historyManager;
     this.commandParser = commandParser;
+    this.environmentManager = environmentManager;
+    this.workingDirManager = workingDirManager;
+    this.tabCompletionRegistry = tabCompletionRegistry;
   }
 
-  // Add this method to support setting a fallback command
+  // Getter methods for all components
   public setFallbackCommand(command: ICommand): void {
     this.fallbackCommand = command;
   }
 
-  async executeCommand(commandLine: string): Promise<CommandResult> {
-    this.historyManager.add(commandLine);
+  getEnvironmentManager(): IEnvironmentVariableManager {
+    return this.environmentManager;
+  }
 
-    const parsedCommand = this.commandParser.parse(commandLine);
+  getWorkingDirectoryManager(): IWorkingDirectoryManager {
+    return this.workingDirManager;
+  }
+
+  getTabCompletionRegistry(): ITabCompletionRegistry {
+    return this.tabCompletionRegistry;
+  }
+
+  async executeCommand(commandLine: string): Promise<CommandResult> {
+    // First, expand any environment variables in the command line
+    const expandedCommandLine =
+      this.environmentManager.expandVariables(commandLine);
+
+    this.historyManager.add(commandLine); // Still store the original command
+
+    const parsedCommand = this.commandParser.parse(expandedCommandLine);
 
     if (!parsedCommand.commandName) {
       return {

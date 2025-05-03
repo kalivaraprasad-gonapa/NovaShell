@@ -1,8 +1,10 @@
-import React, { useState, useCallback, useRef } from "react";
+// src/components/terminal/TerminalProvider.tsx (update)
+import React, { useState, useCallback } from "react";
 import { nanoid } from "nanoid";
 import { TerminalContext, TerminalContextType } from "./TerminalContext";
 import { TerminalOutputEntry } from "../types/TerminalOutputEntry";
 import { CommandResult, IShellSession } from "@/core/interfaces/ICommand";
+import { ITabCompletionRegistry } from "@/core/interfaces/ITabCompletion";
 
 interface TerminalProviderProps {
   shellSession: IShellSession;
@@ -68,6 +70,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({
     shellSession,
     outputEntries,
     isExecuting,
+    tabCompletionRegistry: shellSession.getTabCompletionRegistry(),
     executeCommand,
     clearOutput,
   };

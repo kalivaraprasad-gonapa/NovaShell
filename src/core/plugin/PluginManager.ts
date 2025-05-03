@@ -1,11 +1,17 @@
-import { ICommandPlugin, IShellSession } from "../interfaces/ICommand";
+// src/core/plugin/PluginManager.ts
+import { ICommandPlugin, IShellSession, ICommand } from "../interfaces/ICommand";
 
 export class PluginManager {
   private readonly plugins = new Map<string, ICommandPlugin>();
   private readonly shellSession: IShellSession;
+  private readonly registeredCommandIds = new Set<string>();
 
   constructor(shellSession: IShellSession) {
     this.shellSession = shellSession;
+    
+    // Initialize with commands that are already registered
+    const existingCommands = this.shellSession.getCommandRegistry().getAllCommands();
+    existingCommands.forEach(cmd => this.registeredCommandIds.add(cmd.id));
   }
 
   async registerPlugin(plugin: ICommandPlugin): Promise<void> {
@@ -15,10 +21,21 @@ export class PluginManager {
 
     await plugin.initialize(this.shellSession);
 
-    // Register all commands from the plugin
+    // Register all commands from the plugin - but skip those that are already registered
     const registry = this.shellSession.getCommandRegistry();
+    
     for (const command of plugin.commands) {
-      registry.register(command);
+      try {
+        // Try to register with silent option, so it will return false instead of throwing
+        const registered = registry.register(command, { silent: true });
+        if (registered) {
+          this.registeredCommandIds.add(command.id);
+        } else {
+          console.warn(`Command with ID "${command.id}" from plugin "${plugin.id}" was not registered because a command with the same ID already exists.`);
+        }
+      } catch (error) {
+        console.warn(`Error registering command "${command.id}" from plugin "${plugin.id}":`, error);
+      }
     }
 
     this.plugins.set(plugin.id, plugin);
@@ -32,6 +49,7 @@ export class PluginManager {
     const registry = this.shellSession.getCommandRegistry();
     for (const command of plugin.commands) {
       registry.unregister(command.id);
+      this.registeredCommandIds.delete(command.id);
     }
 
     await plugin.terminate();

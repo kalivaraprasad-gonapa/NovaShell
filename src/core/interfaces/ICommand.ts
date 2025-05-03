@@ -1,4 +1,7 @@
 import React from "react";
+import { ITabCompletionRegistry } from "./ITabCompletion";
+import { IWorkingDirectoryManager } from "./IWorkingDirectory";
+import { IEnvironmentVariableManager } from "./IEnvironment";
 
 export interface CommandResult {
   readonly output: string | React.ReactNode;
@@ -13,8 +16,13 @@ export interface ICommand {
   validate(args: string[]): boolean;
 }
 
+export interface RegisterOptions {
+  overwrite?: boolean;
+  silent?: boolean;
+}
+
 export interface ICommandRegistry {
-  register(command: ICommand): void;
+  register(command: ICommand, options?: RegisterOptions): boolean;
   unregister(commandId: string): void;
   getCommand(commandId: string): ICommand | undefined;
   getAllCommands(): ReadonlyArray<ICommand>;
@@ -25,12 +33,19 @@ export interface IHistoryManager {
   get(index: number): string | undefined;
   search(term: string): ReadonlyArray<string>;
   getAll(): ReadonlyArray<string>;
+  saveHistory(): Promise<boolean>;
+  loadHistory(): Promise<boolean>;
+  clear(): void;
 }
 
 export interface IShellSession {
   executeCommand(commandLine: string): Promise<CommandResult>;
   getHistory(): IHistoryManager;
   getCommandRegistry(): ICommandRegistry;
+  getTabCompletionRegistry(): ITabCompletionRegistry;
+  getWorkingDirectoryManager(): IWorkingDirectoryManager;
+  getEnvironmentManager(): IEnvironmentVariableManager;
+  setFallbackCommand(command: ICommand): void;
 }
 
 export interface ParsedCommand {
