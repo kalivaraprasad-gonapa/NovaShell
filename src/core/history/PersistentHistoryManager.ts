@@ -64,7 +64,16 @@ export class PersistentHistoryManager implements IHistoryManager {
       localStorage.setItem(this.storageKey, JSON.stringify(this.history));
       return true;
     } catch (error) {
-      console.error("Failed to save command history:", error);
+      if (
+        error instanceof DOMException &&
+        error.name === "QuotaExceededError"
+      ) {
+        console.error("Storage quota exceeded while trying to save history.");
+        // Optionally, implement logic to manage quota exceedance here,
+        // for example, by clearing older history items or notifying the user.
+      } else {
+        console.error("Failed to save command history:", error);
+      }
       return false;
     }
   }
